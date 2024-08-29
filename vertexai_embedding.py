@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import faiss
 from typing import List
+import vertexai
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 
 logger = logging.getLogger(__name__)
@@ -14,12 +15,13 @@ handler.setLevel(logging.DEBUG)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-GEMINI_EMBEDDING_MODEL = "text-multilingual-embedding-002"
+GEMINI_EMBEDDING_MODEL = "text-multilingual-embedding-002" # All the non-English embedding need to use this model.
 JSON_FILE_NAME = "./KO_08_12_2024.json"
 FAISS_DATABASE_NAME = "./KO_08_12_2024.faiss"
 
-DIMENSION = 768
-BATCH_SIZE = 25
+DIMENSION = 768 # This number will be used both in Embedding Model and in Faiss.
+BATCH_SIZE = 25 # As the emmbedding API has a maximum input token limit of 20,000 pre batch, I decided to set it to 25.
+PROJECT_ID = '' # Please add the project ID
 
 def load_chunks_from_json() -> List[str] :
     try:
@@ -59,6 +61,10 @@ def commit_faiss(index):
         sys.exit(1)
 
 def main():
+    # The location must be 'us-central1' for the proper batch embedding.
+    # reference: https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings
+    vertexai.init(project=PROJECT_ID, location="us-central1")
+
     chunks = load_chunks_from_json()
     index = faiss.IndexFlatL2(DIMENSION)
 
